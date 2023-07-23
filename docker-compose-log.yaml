@@ -1,0 +1,85 @@
+version: "3"
+
+
+services:
+  loki:
+    image: grafana/loki:2.8.2
+    volumes:
+      - ./logs/config/loki/:/etc/loki/
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    # networks:
+    #   - logs
+    ports:
+      - "3100:3100"
+    network_mode: host
+
+  influxdb:
+    image: influxdb:1.8
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+    # set db name in environment variable
+    environment:
+      - INFLUXD_DB=k6
+    # networks:
+    #   - logs
+    ports:
+      - "8086:8086"
+    network_mode: host
+    
+  grafana:
+    environment:
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_INSTALL_PLUGINS=blackmirror1-singlestat-math-panel
+    entrypoint:
+      - sh
+      - -euc
+      - |
+        mkdir -p /etc/grafana/provisioning/datasources
+        cat <<EOF > /etc/grafana/provisioning/datasources/ds.yaml
+        apiVersion: 1
+        datasources:
+        - name: Loki
+          type: loki
+          access: proxy 
+          orgId: 1
+          url: http://localhost:3100
+          basicAuth: false
+          isDefault: true
+          version: 1
+          editable: false
+        - name: InfluxDB
+          type: influxdb
+          access: proxy
+          orgId: 1
+          url: http://localhost:8086
+          database: k6
+          user: admin
+          password: admin
+          basicAuth: false
+          isDefault: false
+          version: 1
+          editable: false
+        EOF
+        /run.sh
+    image: grafana/grafana:latest
+    volumes:
+      - ./logs/config/graphana/dashboard.yaml:/etc/grafana/provisioning/dashboards/main.yaml
+      - ./logs/config/graphana/dashboards/:/var/lib/grafana/dashboards/
+    ports:
+      - "3000:3000"
+    # networks:
+    #   - logs
+    network_mode: host
+    depends_on:
+      - loki
+      - influxdb
+
+
+# networks:
+#   logs:
+volumes:
+  influxdb-data:
+  loki-data:

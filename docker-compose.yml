@@ -1,0 +1,52 @@
+version: "3.9"
+
+services:
+  build:
+    image: node:18.16.0-alpine
+    command:
+      - sh
+      - -c
+      - |
+        npm install
+        npm run build
+    working_dir: /app
+    volumes:
+      - .:/app
+      - build:/app/dist
+      - node_cache:/app/node_modules
+  clean:
+    image: busybox
+    command:
+      - sh
+      - -c
+      - |
+        rm -rf dist
+        rm -rf node_modules
+    working_dir: /app
+    volumes:
+      - .:/app
+      - build:/app/dist
+      - node_cache:/app/node_modules
+  k6:
+    image: k6:custom
+    build:
+      context: ./extensions
+    environment:
+      - TEST=$TEST
+      - SCENARIOS=$SCENARIOS
+    # command: run /dist/$TEST.js
+    # command: run --log-output=loki=http://localhost:3100/loki/api/v1/push,label.qa=k6 /dist/$TEST.js
+    # command: run --out influxdb=http://localhost:8086/k6 /dist/$TEST.js 
+    # command: run --out influxdb=http://localhost:8086/k6 --log-output=loki=http://localhost:3100/loki/api/v1/push,label.qa=k6 --env SCENARIOS=$SCENARIOS /dist/$TEST.js 
+    command: run --out influxdb=http://localhost:8086/k6 --log-output=loki=http://localhost:3100/loki/api/v1/push,label.qa=k6 --env SCENARIOS=$SCENARIOS --quiet /dist/$TEST.js 
+    volumes:
+      - build:/dist
+    depends_on:
+      - build
+    network_mode: host
+    ports:
+      - "5665:5665"
+
+volumes:
+  build:
+  node_cache:
