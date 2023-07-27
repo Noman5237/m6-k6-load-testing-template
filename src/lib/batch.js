@@ -5,7 +5,7 @@ import { setupTraceAndSpan } from './log';
 
 export const executeBatch = (batch, vault = {}) => {
   const requests = {};
-  const log = setupTraceAndSpan(vault);
+  const { log, error, fail } = setupTraceAndSpan(vault);
   for (let i = 0; i < batch.length; i += 1) {
     const element = batch[i];
     const { name, func } = parseNameAndFunction(element);
@@ -23,11 +23,17 @@ export const executeBatch = (batch, vault = {}) => {
   log(`Executing batch of ${Object.keys(requests)}`);
   const responses = http.batch(requests);
 
+  let checkFailed = false;
   Object.entries(responses).forEach(([name, response]) => {
-    log(`output ${name}: ${JSON.stringify(response)}`);
+    log(`method=${name} output: ${JSON.stringify(response)}`);
     vault[name] = response;
     if (!isResponseOk(response)) {
-      console.error(`CHECK FAILED ${name}`);
+      error(`method=${name} CHECK FAILED`);
+      checkFailed = true;
     }
   });
+
+  if (checkFailed) {
+    fail(`batch CHECK FAILED`);
+  }
 };

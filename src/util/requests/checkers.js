@@ -5,7 +5,7 @@ export const RESPONSE_STATUS_OK = () => ({
 });
 
 export const isResponseOk = (response) => {
-  if (!response || !response.status) {
+  if (!response || response.status === undefined) {
     return true;
   }
 

@@ -1,12 +1,10 @@
 // eslint-disable-next-line import/no-unresolved, import/extensions
 import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
+import { fail } from 'k6';
+import crypto from 'k6/crypto';
 import { DASHBOARD } from '../constants/servers';
 
-export const generateLogId = () => {
-  const timestamp = Date.now();
-  const threeDigitRandom = Math.floor(Math.random() * 1000);
-  return `${timestamp}${threeDigitRandom}`;
-};
+export const generateLogId = () => crypto.md5(crypto.randomBytes(8), 'hex');
 
 export const setupTraceAndSpan = (vault) => {
   let { traceId } = vault;
@@ -21,8 +19,16 @@ export const setupTraceAndSpan = (vault) => {
   vault.traceId = traceId;
   vault.spanId = spanId;
 
-  return (message) => {
-    console.log(`[${traceId}-${spanId}]: ${message}`);
+  return {
+    log: (message) => {
+      console.log(`[${traceId}-${spanId}] ${message}`);
+    },
+    fail: (message) => {
+      fail(`[${traceId}-${spanId}] ${message}`);
+    },
+    error: (message) => {
+      console.error(`[${traceId}-${spanId}] ${message}`);
+    }
   };
 };
 

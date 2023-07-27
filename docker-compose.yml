@@ -34,19 +34,31 @@ services:
     environment:
       - TEST=$TEST
       - SCENARIOS=$SCENARIOS
+      - LOG_FILE=$LOG_FILE
     # command: run /dist/$TEST.js
     # command: run --log-output=loki=http://localhost:3100/loki/api/v1/push,label.qa=k6 /dist/$TEST.js
     # command: run --out influxdb=http://localhost:8086/k6 /dist/$TEST.js 
     # command: run --out influxdb=http://localhost:8086/k6 --log-output=loki=http://localhost:3100/loki/api/v1/push,label.qa=k6 --env SCENARIOS=$SCENARIOS /dist/$TEST.js 
-    command: run --out influxdb=http://localhost:8086/k6 --log-output=loki=http://localhost:3100/loki/api/v1/push,label.qa=k6 --env SCENARIOS=$SCENARIOS --quiet /dist/$TEST.js 
+    # command: run --out influxdb=http://localhost:8086/k6 --log-output=file=/logs/test-$LOG_FILE.log --env SCENARIOS=$SCENARIOS /dist/$TEST.js 
+    command: run --out influxdb=http://localhost:8086/k6 --log-output=file=/logs/test-$LOG_FILE.log --env SCENARIOS=$SCENARIOS --quiet /dist/$TEST.js 
     volumes:
       - build:/dist
+      - logs:/logs
     depends_on:
       - build
     network_mode: host
     ports:
       - "5665:5665"
 
+  promtail:
+    image: grafana/promtail:2.8.2
+    command: -config.file=/etc/promtail/local-config.yaml
+    volumes:
+      - ./logs/config/promtail:/etc/promtail
+      - logs:/logs
+    network_mode: host
+
 volumes:
   build:
   node_cache:
+  logs:

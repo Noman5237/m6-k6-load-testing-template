@@ -1,0 +1,15 @@
+server:
+  http_listen_port: 3200
+
+distributor:
+  receivers:
+    zipkin:
+    jaeger:
+      protocols:
+        thrift_http:
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /tmp/tempo/blocks

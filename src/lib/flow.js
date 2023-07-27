@@ -1,10 +1,10 @@
-import { fail } from 'k6';
 import { isResponseOk } from '../util/requests/checkers';
 import { parseNameAndFunction } from './request';
 import { setupTraceAndSpan } from './log';
+import { FlowCounter } from './counter';
 
 export const executeFlow = (flow, vault = {}) => {
-  const log = setupTraceAndSpan(vault);
+  const { log, fail } = setupTraceAndSpan(vault);
   let output;
   for (let i = 0; i < flow.length; i += 1) {
     const input = output;
@@ -12,13 +12,15 @@ export const executeFlow = (flow, vault = {}) => {
     const element = flow[i];
     const { name, func } = parseNameAndFunction(element);
 
-    log(`executing ${name}`);
+    log(`method=${name} executing...`);
     output = func(input, vault);
-    log(`output ${name}: ${JSON.stringify(output)}`);
+    log(`method=${name} output: ${JSON.stringify(output)}`);
     if (!isResponseOk(output)) {
-      fail(`CHECK FAILED: ${name}`);
+      fail(`method=${name} CHECK FAILED`);
     }
     vault[name] = output;
   }
+  log(`flow executed successfully`);
+  FlowCounter.add(1);
   return vault;
 };

@@ -17,6 +17,12 @@ RUN apk add --no-cache ca-certificates && \
     adduser -D -u 12345 -g 12345 k6
 COPY --from=builder /go/src/go.k6.io/k6/k6/ /usr/bin/k6
 
+# logs directory
+RUN mkdir -p /logs
+VOLUME /logs
+# give non-root user access to logs directory
+RUN chown -R k6:k6 /logs
+
 USER k6
 WORKDIR /home/k6
 

@@ -1,0 +1,30 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://localhost:3100/loki/api/v1/push
+
+scrape_configs:
+- job_name: system
+  static_configs:
+  - targets:
+      - localhost
+    labels:
+      job: varlogs
+      __path__: /logs/*.log
+  pipeline_stages:
+  - match:
+      selector: '{job="varlogs"}'
+      stages:
+      - regex:
+          expression: 'time="(?P<time>.*?)" level=(?P<level>[^\s]+) msg="(GoError: )?\[(?P<traceID>[A-Fa-f0-9]+)-(?P<spanID>[A-Fa-f0-9]+)\](?: method=(?P<method>[^\s]+))? .*"(.*)? source=(?P<source>[^\s]+)'
+      - labels:
+          traceID:
+          spanID:
+          level:
+          method:
+          source:

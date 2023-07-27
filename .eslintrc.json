@@ -56,7 +56,8 @@
 		"import/core-modules": [
 			"k6",
 			"k6/http",
-			"k6/metrics"
+			"k6/metrics",
+			"k6/crypto"
 		]
 	},
 	"overrides": [

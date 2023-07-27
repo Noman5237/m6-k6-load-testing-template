@@ -1,19 +1,19 @@
-import { executeFlow } from "../lib/flow";
-import { request } from "../lib/request";
-import { summaryWithDashboard } from "../lib/log";
-import { parseScenarios } from "../lib/scenario";
-import { markStart } from "../lib/trend";
+import { executeFlow } from '../lib/flow';
+import { request } from '../lib/request';
+import { summaryWithDashboard } from '../lib/log';
+import { parseScenarios } from '../lib/scenario';
+import { markStart } from '../lib/trend';
 
-import { STANDARD_SCENARIOS } from "../data/scenario";
+import { STANDARD_SCENARIOS } from '../data/scenario';
 
-import { GATEWAY } from "../constants/servers";
+import { GATEWAY } from '../constants/servers';
 
 /* ================================ REQUESTS ================================ */
 export const test = () => request({
-	server: GATEWAY,
-	method: "GET",
-	path: "/",
-})
+  server: GATEWAY,
+  method: 'GET',
+  path: '/',
+});
 
 /* ================================ SETUP ================================ */
 export const options = {
@@ -21,14 +21,14 @@ export const options = {
 };
 
 export function setup() {
-	markStart();
+  markStart();
 }
 
 /* ================================ FLOW ================================ */
 export default function () {
-	executeFlow([
-		test
-	]);
+  executeFlow([
+    test
+  ]);
 }
 
 /* ================================ END ================================ */

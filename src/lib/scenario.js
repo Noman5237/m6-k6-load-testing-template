@@ -10,6 +10,5 @@ export const parseScenarios = (env, scenarios) => {
   keys.forEach((key) => {
     selectedScenarios[key] = scenarios[key];
   });
-  console.log('selectedScenarios', selectedScenarios);
   return selectedScenarios;
 };

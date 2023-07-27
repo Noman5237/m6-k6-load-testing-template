@@ -2,12 +2,30 @@ version: "3"
 
 
 services:
+  tempo:
+    image: grafana/tempo:2.1.1
+    command: "-config.file=/etc/tempo/local-config.yaml"
+    volumes:
+      - ./logs/config/tempo/:/etc/tempo/
+      - tempo-data:/tmp/tempo
+    # networks:
+    #   - logs
+    ports:
+      - "14268"  # jaeger ingest
+      - "9411:9411" # zipkin
+    network_mode: host
+
   loki:
     image: grafana/loki:2.8.2
     volumes:
       - ./logs/config/loki/:/etc/loki/
       - loki-data:/loki
     command: -config.file=/etc/loki/local-config.yaml
+    # environment:
+    #   - JAEGER_AGENT_HOST=localhost
+    #   - JAEGER_ENDPOINT=http://localhost:14268/api/traces # send traces to Tempo
+    #   - JAEGER_SAMPLER_TYPE=const
+    #   - JAEGER_SAMPLER_PARAM=1
     # networks:
     #   - logs
     ports:
@@ -62,6 +80,15 @@ services:
           isDefault: false
           version: 1
           editable: false
+        - name: Tempo
+          type: tempo
+          access: proxy
+          orgId: 1
+          url: http://localhost:3200
+          basicAuth: false
+          isDefault: false
+          version: 1
+          editable: false
         EOF
         /run.sh
     image: grafana/grafana:latest
@@ -71,7 +98,7 @@ services:
     ports:
       - "3000:3000"
     # networks:
-    #   - logs
+    #   - loki
     network_mode: host
     depends_on:
       - loki
@@ -83,3 +110,4 @@ services:
 volumes:
   influxdb-data:
   loki-data:
+  tempo-data:
