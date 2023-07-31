@@ -25,7 +25,7 @@ export function setup() {
 }
 
 /* ================================ FLOW ================================ */
-export default function () {
+export default function SetupLoadTest() {
   executeFlow([
     test
   ]);
