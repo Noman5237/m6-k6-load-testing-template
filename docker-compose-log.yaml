@@ -8,12 +8,11 @@ services:
     volumes:
       - ./logs/config/tempo/:/etc/tempo/
       - tempo-data:/tmp/tempo
-    # networks:
-    #   - logs
+    networks:
+      - logs
     ports:
       - "14268"  # jaeger ingest
       - "9411:9411" # zipkin
-    network_mode: host
 
   loki:
     image: grafana/loki:2.8.2
@@ -26,11 +25,10 @@ services:
     #   - JAEGER_ENDPOINT=http://localhost:14268/api/traces # send traces to Tempo
     #   - JAEGER_SAMPLER_TYPE=const
     #   - JAEGER_SAMPLER_PARAM=1
-    # networks:
-    #   - logs
+    networks:
+      - logs
     ports:
       - "3100:3100"
-    network_mode: host
 
   influxdb:
     image: influxdb:1.8
@@ -39,11 +37,10 @@ services:
     # set db name in environment variable
     environment:
       - INFLUXD_DB=k6
-    # networks:
-    #   - logs
+    networks:
+      - logs
     ports:
       - "8086:8086"
-    network_mode: host
     
   grafana:
     environment:
@@ -97,16 +94,15 @@ services:
       - ./logs/config/graphana/dashboards/:/var/lib/grafana/dashboards/
     ports:
       - "3000:3000"
-    # networks:
-    #   - loki
-    network_mode: host
+    networks:
+      - logs
     depends_on:
       - loki
       - influxdb
 
 
-# networks:
-#   logs:
+networks:
+  logs:
 volumes:
   influxdb-data:
   loki-data:

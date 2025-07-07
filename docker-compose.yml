@@ -46,7 +46,8 @@ services:
       - logs:/logs
     depends_on:
       - build
-    network_mode: host
+    networks:
+      - logs
     ports:
       - "5665:5665"
 
@@ -56,9 +57,113 @@ services:
     volumes:
       - ./logs/config/promtail:/etc/promtail
       - logs:/logs
-    network_mode: host
+    networks:
+      - logs
 
+  tempo:
+    image: grafana/tempo:2.1.1
+    command: "-config.file=/etc/tempo/local-config.yaml"
+    volumes:
+      - ./logs/config/tempo/:/etc/tempo/
+      - tempo-data:/tmp/tempo
+    networks:
+      - logs
+    ports:
+      - "14268"  # jaeger ingest
+      - "9411:9411" # zipkin
+
+  loki:
+    image: grafana/loki:2.8.2
+    volumes:
+      - ./logs/config/loki/:/etc/loki/
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    # environment:
+    #   - JAEGER_AGENT_HOST=localhost
+    #   - JAEGER_ENDPOINT=http://localhost:14268/api/traces # send traces to Tempo
+    #   - JAEGER_SAMPLER_TYPE=const
+    #   - JAEGER_SAMPLER_PARAM=1
+    networks:
+      - logs
+    ports:
+      - "3100:3100"
+
+  influxdb:
+    image: influxdb:1.8
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+    # set db name in environment variable
+    environment:
+      - INFLUXD_DB=k6
+    networks:
+      - logs
+    ports:
+      - "8086:8086"
+    
+  grafana:
+    environment:
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_INSTALL_PLUGINS=blackmirror1-singlestat-math-panel
+    entrypoint:
+      - sh
+      - -euc
+      - |
+        mkdir -p /etc/grafana/provisioning/datasources
+        cat <<EOF > /etc/grafana/provisioning/datasources/ds.yaml
+        apiVersion: 1
+        datasources:
+        - name: Loki
+          type: loki
+          access: proxy 
+          orgId: 1
+          url: http://localhost:3100
+          basicAuth: false
+          isDefault: true
+          version: 1
+          editable: false
+        - name: InfluxDB
+          type: influxdb
+          access: proxy
+          orgId: 1
+          url: http://localhost:8086
+          database: k6
+          user: admin
+          password: admin
+          basicAuth: false
+          isDefault: false
+          version: 1
+          editable: false
+        - name: Tempo
+          type: tempo
+          access: proxy
+          orgId: 1
+          url: http://localhost:3200
+          basicAuth: false
+          isDefault: false
+          version: 1
+          editable: false
+        EOF
+        /run.sh
+    image: grafana/grafana:latest
+    volumes:
+      - ./logs/config/graphana/dashboard.yaml:/etc/grafana/provisioning/dashboards/main.yaml
+      - ./logs/config/graphana/dashboards/:/var/lib/grafana/dashboards/
+    ports:
+      - "3000:3000"
+    networks:
+      - logs
+    depends_on:
+      - loki
+      - influxdb
+
+networks:
+  logs:
 volumes:
+  influxdb-data:
+  loki-data:
+  tempo-data:
   build:
   node_cache:
   logs:
